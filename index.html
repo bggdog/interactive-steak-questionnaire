@@ -497,7 +497,7 @@
   <video class="bg-video" autoplay muted loop playsinline preload="metadata">
     <source src="/bg.mp4" type="video/mp4" />
   </video>
-  <audio id="bgMusic" class="bg-audio" loop preload="metadata" playsinline>
+  <audio id="bgMusic" class="bg-audio" autoplay loop preload="auto" playsinline>
     <source src="/background-music.mp3" type="audio/mpeg" />
   </audio>
   <main class="app">
@@ -911,13 +911,28 @@
       const bgMusic = document.getElementById("bgMusic");
       if (!bgMusic) return;
       bgMusic.volume = 0.32;
-      document.addEventListener(
-        "pointerdown",
-        () => {
-          bgMusic.play().catch(() => {});
-        },
-        { once: true, passive: true }
-      );
+
+      let fallbackArmed = false;
+      function armGestureFallback() {
+        if (fallbackArmed) return;
+        fallbackArmed = true;
+        document.addEventListener(
+          "pointerdown",
+          () => {
+            void bgMusic.play().catch(() => {});
+          },
+          { once: true, passive: true }
+        );
+      }
+
+      function tryPlay() {
+        return bgMusic.play().catch((err) => {
+          if (err && err.name === "NotAllowedError") armGestureFallback();
+        });
+      }
+
+      void tryPlay();
+      bgMusic.addEventListener("canplay", () => void tryPlay(), { once: true });
     })();
 
     renderQuestion();
