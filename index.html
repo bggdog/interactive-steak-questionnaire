@@ -66,6 +66,15 @@
       pointer-events: none;
     }
 
+    .bg-audio {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      pointer-events: none;
+      clip: rect(0, 0, 0, 0);
+    }
+
     .app {
       width: min(760px, 100%);
       position: relative;
@@ -488,6 +497,9 @@
   <video class="bg-video" autoplay muted loop playsinline preload="metadata">
     <source src="/bg.mp4" type="video/mp4" />
   </video>
+  <audio id="bgMusic" class="bg-audio" loop preload="metadata" playsinline>
+    <source src="/background-music.mp3" type="audio/mpeg" />
+  </audio>
   <main class="app">
     <h1 class="hero-title">An Evening Well Spent</h1>
     <section class="card" id="card">
@@ -894,6 +906,19 @@
       `;
       void persistSubmission({ ...state.answers });
     }
+
+    (function initBackgroundMusic() {
+      const bgMusic = document.getElementById("bgMusic");
+      if (!bgMusic) return;
+      bgMusic.volume = 0.32;
+      document.addEventListener(
+        "pointerdown",
+        () => {
+          bgMusic.play().catch(() => {});
+        },
+        { once: true, passive: true }
+      );
+    })();
 
     renderQuestion();
   </script>
