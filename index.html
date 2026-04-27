@@ -281,6 +281,29 @@
       transform: none;
     }
 
+    .card--intro .progress-wrap {
+      display: none;
+    }
+
+    .intro-body {
+      margin-top: 2px;
+    }
+
+    .intro-copy {
+      margin: 0 0 14px;
+      color: #f0e8e8;
+      font-size: 0.98rem;
+      line-height: 1.55;
+    }
+
+    .intro-start {
+      width: 100%;
+      margin-top: 6px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      background: linear-gradient(120deg, #8f3535, #c45c5c);
+    }
+
     .helper {
       color: #ffffff;
       font-size: 0.85rem;
@@ -650,7 +673,8 @@
 
     const state = {
       index: 0,
-      answers: {}
+      answers: {},
+      onIntro: true
     };
 
     const questionText = document.getElementById("questionText");
@@ -723,7 +747,47 @@
       return input.trim().replace(/\s+/g, " ");
     }
 
+    function renderIntro() {
+      card.classList.add("card--intro");
+      progressFill.style.width = "0%";
+      progressText.textContent = "";
+      progressPercent.textContent = "";
+      questionText.textContent = "Before we begin";
+      inputs.innerHTML = "";
+
+      const wrap = document.createElement("div");
+      wrap.className = "intro-body";
+
+      const p1 = document.createElement("p");
+      p1.className = "intro-copy";
+      p1.textContent =
+        "This is a quick preferences pass for the evening—steak, sushi, drinks, and a few personality checkpoints—so the experience can feel intentional before you walk in.";
+
+      const p2 = document.createElement("p");
+      p2.className = "intro-copy";
+      p2.textContent =
+        "It only takes a couple of minutes. Full-screen transitions will appear between questions; answer honestly and we will pretend to judge you with affection.";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "next-btn intro-start";
+      btn.textContent = "Get started";
+      btn.addEventListener("click", () => {
+        state.onIntro = false;
+        card.classList.remove("card--intro");
+        renderQuestion();
+      });
+
+      wrap.append(p1, p2, btn);
+      inputs.appendChild(wrap);
+    }
+
     function renderQuestion() {
+      if (state.onIntro) {
+        renderIntro();
+        return;
+      }
+
       if (state.index >= questionnaire.length) {
         renderThankYou();
         return;
