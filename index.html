@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elite Night Intake Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #120f1f;
+      --bg-2: #1b1332;
+      --card: rgba(12, 12, 12, 0.84);
+      --card-border: rgba(255, 255, 255, 0.14);
+      --text: #f8f3ff;
+      --muted: #c7bddf;
+      --accent: #8f7bff;
+      --accent-2: #5ce1e6;
+      --good: #70ffa9;
+      --warning: #ffb86a;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      --input-red-bg: rgba(71, 20, 20, 0.3);
+      --input-red-border: rgba(255, 140, 140, 0.34);
+      --input-red-hover: rgba(153, 44, 44, 0.34);
+      --input-red-focus: rgba(255, 122, 122, 0.8);
+      --input-red-focus-ring: rgba(255, 122, 122, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #05040c;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      position: relative;
+      isolation: isolate;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 34%),
+        radial-gradient(circle at 80% 0%, rgba(0, 0, 0, 0.22), transparent 32%),
+        linear-gradient(145deg, rgba(6, 6, 10, 0.72), rgba(10, 10, 14, 0.78));
+    }
+
+    .bg-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    .app {
+      width: min(760px, 100%);
+      position: relative;
+    }
+
+    .hero-title {
+      margin: 0 0 16px;
+      text-align: center;
+      font-family: "Cormorant Garamond", "Times New Roman", serif;
+      font-size: clamp(2.2rem, 5.6vw, 3.5rem);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: #f4f2ed;
+      text-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      padding: 28px;
+      transform-origin: center;
+      will-change: transform, opacity, filter;
+      animation: cardIn 420ms ease;
+    }
+
+    .headline {
+      margin: 0 0 4px;
+      font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+    }
+
+    .subhead {
+      margin: 0 0 18px;
+      color: #e6c9c9;
+      font-size: 0.95rem;
+    }
+
+    .progress-wrap {
+      margin-bottom: 22px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    #progressText {
+      color: #ffffff;
+    }
+
+    .progress-track {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #b93b3b, #e06767);
+      transition: width 350ms ease;
+    }
+
+    .question {
+      margin: 0 0 16px;
+      font-size: 1.2rem;
+      line-height: 1.45;
+    }
+
+    .options {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .rank-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .rank-card {
+      border: 1px solid var(--input-red-border);
+      background: var(--input-red-bg);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: grab;
+      user-select: none;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .rank-card:hover {
+      border-color: rgba(255, 122, 122, 0.74);
+      background: var(--input-red-hover);
+    }
+
+    .rank-card.dragging {
+      opacity: 0.45;
+      transform: scale(0.98);
+      cursor: grabbing;
+    }
+
+    .rank-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(120deg, var(--accent), #6f5fff);
+      flex-shrink: 0;
+    }
+
+    .rank-label {
+      flex: 1;
+      font-size: 0.96rem;
+      line-height: 1.35;
+    }
+
+    .drag-hint {
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+    }
+
+    .option-btn {
+      border: 1px solid var(--input-red-border);
+      background: var(--input-red-bg);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.98rem;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 122, 122, 0.74);
+      background: var(--input-red-hover);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 1px solid var(--input-red-border);
+      background: rgba(48, 15, 15, 0.42);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.96rem;
+      line-height: 1.45;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    textarea:focus {
+      border-color: var(--input-red-focus);
+      box-shadow: 0 0 0 3px var(--input-red-focus-ring);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .next-btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 16px;
+      background: linear-gradient(120deg, var(--accent), #6f5fff);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .next-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+
+    .next-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      transform: none;
+    }
+
+    .helper {
+      color: #ffffff;
+      font-size: 0.85rem;
+      margin-right: auto;
+    }
+
+    .transition {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      overflow: hidden;
+    }
+
+    .transition::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.08), transparent 30%),
+        radial-gradient(circle at 86% 86%, rgba(0, 0, 0, 0.28), transparent 34%),
+        linear-gradient(165deg, rgba(6, 6, 10, 0.98), rgba(12, 12, 16, 0.98));
+      transform: translateY(-108%);
+    }
+
+    .transition.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .transition.active::before {
+      animation: swipeDownOverlay 2300ms cubic-bezier(0.22, 0.7, 0.18, 1) forwards;
+    }
+
+    .transition-bubble {
+      position: relative;
+      z-index: 2;
+      max-width: min(86vw, 780px);
+      border-radius: 22px;
+      background: rgba(10, 8, 20, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      padding: 24px 24px 22px;
+      text-align: center;
+      color: #fff;
+      transform: translateY(22px) scale(0.95);
+      opacity: 0;
+    }
+
+    .transition.active .transition-bubble {
+      animation: bubblePop 1900ms 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .transition-emoji {
+      font-size: clamp(2rem, 6vw, 3.8rem);
+      line-height: 1;
+      margin-bottom: 10px;
+      display: block;
+      filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.35));
+      opacity: 0;
+      transform: translateY(8px) scale(0.9);
+    }
+
+    .transition.active .transition-emoji {
+      animation: emojiBob 1300ms 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .transition-text {
+      font-size: clamp(1rem, 2.5vw, 1.24rem);
+      line-height: 1.45;
+      letter-spacing: 0.01em;
+    }
+
+    .card.whip-out {
+      animation: whipOut 460ms cubic-bezier(0.5, 0.04, 0.3, 1) forwards;
+    }
+
+    .card.whip-in {
+      animation: whipIn 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .thank-you {
+      text-align: center;
+      padding: 10px 6px 2px;
+    }
+
+    .thank-you h2 {
+      margin: 0 0 10px;
+      font-size: 1.7rem;
+    }
+
+    .thank-you p {
+      margin: 8px auto;
+      color: var(--muted);
+      max-width: 52ch;
+      line-height: 1.5;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: rgba(112, 255, 169, 0.14);
+      color: var(--good);
+      border: 1px solid rgba(112, 255, 169, 0.35);
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    @keyframes cardIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.99);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes swipeDownOverlay {
+      0% {
+        transform: translateY(-108%);
+      }
+      16% {
+        transform: translateY(0%);
+      }
+      82% {
+        transform: translateY(0%);
+      }
+      100% {
+        transform: translateY(105%);
+      }
+    }
+
+    @keyframes bubblePop {
+      0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.93);
+      }
+      16% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      78% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.99);
+      }
+    }
+
+    @keyframes emojiBob {
+      0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.9) rotate(-4deg);
+      }
+      20% {
+        opacity: 1;
+        transform: translateY(0) scale(1.02) rotate(0deg);
+      }
+      72% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-5px) scale(0.98) rotate(0deg);
+      }
+    }
+
+    @keyframes whipOut {
+      from {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) skewX(0deg);
+        filter: blur(0);
+      }
+      to {
+        opacity: 0;
+        transform: translate3d(-132px, 0, 0) skewX(-4deg);
+        filter: blur(2px);
+      }
+    }
+
+    @keyframes whipIn {
+      from {
+        opacity: 1;
+        transform: translate3d(150px, 0, 0) skewX(4deg);
+        filter: blur(2px);
+      }
+      68% {
+        opacity: 1;
+        transform: translate3d(-8px, 0, 0) skewX(-0.4deg);
+        filter: blur(0);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) skewX(0deg);
+        filter: blur(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1 class="hero-title">An Evening Well Spent</h1>
+    <section class="card" id="card">
+      <h2 class="headline">Questionnaire</h2>
+      <p class="subhead">A refined intake process for steak, sushi, cocktails, cigars, and excellent opinions.</p>
+
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span id="progressText">Question 1 of 8</span>
+          <span id="progressPercent">13%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <h2 class="question" id="questionText"></h2>
+      <div id="inputs"></div>
+    </section>
+
+    <section class="transition" id="transition">
+      <div class="transition-bubble">
+        <span class="transition-emoji" id="transitionEmoji">😎</span>
+        <div class="transition-text" id="transitionBubble"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const questionnaire = [
+      {
+        id: "steak",
+        type: "choice",
+        question: "1) How do you like your steak?",
+        options: [
+          { value: "medium_rare", label: "A. Medium Rare" },
+          { value: "no_other_way", label: "B. There is no other way" }
+        ],
+        responses: {
+          medium_rare: "Solid choice. You pass the basic humanity check.",
+          no_other_way: "Correct. We were worried we'd need to cancel this whole event."
+        }
+      },
+      {
+        id: "sushi_preferences",
+        type: "text",
+        question: "2) Any sushi items you prefer or would rather be excluded?",
+        placeholder: "Tell us your sushi truths...",
+        response: (input) => {
+          const text = input.toLowerCase();
+          if (text.includes("no")) return "Minimalist sushi energy. Respectfully dramatic.";
+          if (text.includes("uni") || text.includes("eel") || text.includes("octopus")) return "Adventurous palate detected. Slightly intimidating, honestly.";
+          if (text.length > 90) return "This is less a preference and more a peer-reviewed sushi thesis.";
+          return "Excellent. We will pass this to the sushi council immediately.";
+        }
+      },
+      {
+        id: "spice_level",
+        type: "choice",
+        question: "3) Spice Level Preference",
+        options: [
+          { value: "mild", label: "A. California roll level only" },
+          { value: "medium", label: "B. Medium" },
+          { value: "bring_it", label: "C. Bring it" }
+        ],
+        responses: {
+          mild: "Mild and proud. Your taste buds filed for a quiet evening.",
+          medium: "Balanced. You like danger, but with legal oversight.",
+          bring_it: "Chaos mode activated. We admire your confidence and your insurance policy."
+        }
+      },
+      {
+        id: "cocktail_ranking",
+        type: "rank",
+        question: "4) Cocktail wise - rank these in order: 1) Old Fashioned 2) Martini 3) Manhattan 4) Gimlet 5) Neat or on the rocks Scotch/Bourbon",
+        items: [
+          "Old Fashioned",
+          "Martini",
+          "Manhattan",
+          "Gimlet",
+          "Neat or on the rocks Scotch/Bourbon"
+        ],
+        response: (order) => {
+          const topChoice = (order[0] || "").toLowerCase();
+          if (topChoice.includes("martini")) return "Martini-first? Clean, sharp, and probably judging everyone silently.";
+          if (topChoice.includes("old fashioned")) return "Old Fashioned at the top. Traditional and slightly cinematic.";
+          if (topChoice.includes("neat") || topChoice.includes("scotch") || topChoice.includes("bourbon")) return "Neat/rocks in first place. Big main-character lounge energy.";
+          return "Ranking received. The cocktail algorithm is pretending not to be offended.";
+        }
+      },
+      {
+        id: "cigar_experience",
+        type: "choice",
+        question: "5) Experience with Cigars",
+        options: [
+          { value: "beginner", label: "A. Beginner" },
+          { value: "veteran", label: "B. Veteran" },
+          { value: "pastor_heath", label: "C. My name is Pastor Heath and I will most likely bring a pipe" }
+        ],
+        responses: {
+          beginner: "No worries. We all start somewhere before developing a suspicious humidor budget.",
+          veteran: "Veteran status noted. Please refrain from grading everyone else's cut and light.",
+          pastor_heath: "Legendary answer. Pipe privileges and storytelling rights granted."
+        }
+      },
+      {
+        id: "favorite_cigars",
+        type: "text",
+        question: "6) Any favorite cigars?",
+        placeholder: "Drop your favorites...",
+        response: (input) => {
+          const text = input.toLowerCase();
+          if (text.includes("padron") || text.includes("arturo fuente") || text.includes("davidoff")) {
+            return "Premium picks. Subtle flex, loudly received.";
+          }
+          if (text.length < 12) return "Short answer, big mystery. Very enigmatic.";
+          return "Noted. We appreciate a curated cigar opinion.";
+        }
+      },
+      {
+        id: "conversation_vibe",
+        type: "text",
+        question: "7) Conversationally, what kind of evening are you looking for?",
+        placeholder: "Deep talks, wild stories, laughs, all of it...",
+        response: (input) => {
+          const text = input.toLowerCase();
+          if (text.includes("chill") || text.includes("relax")) return "Chill vibes selected. Emotional support and low chaos incoming.";
+          if (text.includes("debate") || text.includes("politics")) return "Debate mode? Bold. We will hide the sharp objects.";
+          if (text.includes("laugh") || text.includes("fun")) return "Excellent. Comedy-first evenings age like fine bourbon.";
+          return "Vibe captured. We'll calibrate the conversation dial accordingly.";
+        }
+      },
+      {
+        id: "anything_else",
+        type: "text",
+        question: "8) Anything else we should know to make this a great night?",
+        placeholder: "Final notes, requests, warnings...",
+        response: (input) => {
+          const text = input.toLowerCase();
+          if (text.includes("allergy")) return "Health note logged. We'd like this night memorable for good reasons only.";
+          if (text.includes("music") || text.includes("playlist")) return "Playlist guidance accepted. DJ diplomacy in progress.";
+          if (text.length > 120) return "Outstanding detail. You understood the assignment and then rewrote it.";
+          return "Perfect. Last-minute brilliance received.";
+        }
+      }
+    ];
+
+    const state = {
+      index: 0,
+      answers: {}
+    };
+
+    const questionText = document.getElementById("questionText");
+    const inputs = document.getElementById("inputs");
+    const card = document.getElementById("card");
+    const progressFill = document.getElementById("progressFill");
+    const progressText = document.getElementById("progressText");
+    const progressPercent = document.getElementById("progressPercent");
+    const transition = document.getElementById("transition");
+    const transitionEmoji = document.getElementById("transitionEmoji");
+    const transitionBubble = document.getElementById("transitionBubble");
+
+    function updateProgress() {
+      const completed = state.index;
+      const total = questionnaire.length;
+      const percent = Math.round((Math.max(1, completed + 1) / total) * 100);
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = `Question ${Math.min(completed + 1, total)} of ${total}`;
+      progressPercent.textContent = `${percent}%`;
+    }
+
+    function getReactionEmoji(message) {
+      const text = message.toLowerCase();
+      if (text.includes("chaos") || text.includes("danger")) return "🔥";
+      if (text.includes("martini") || text.includes("cocktail") || text.includes("bourbon")) return "🥃";
+      if (text.includes("sushi")) return "🍣";
+      if (text.includes("cigar") || text.includes("pipe")) return "🚬";
+      if (text.includes("legendary") || text.includes("privileges")) return "👑";
+      if (text.includes("chill") || text.includes("calm")) return "😌";
+      if (text.includes("excellent") || text.includes("perfect") || text.includes("ideal")) return "✨";
+      if (text.includes("warning") || text.includes("insurance")) return "⚠️";
+      return "😏";
+    }
+
+    function showTransition(message, callback) {
+      const totalDuration = 2300;
+      const swapQuestionAt = 1100;
+
+      transitionBubble.textContent = message;
+      transitionEmoji.textContent = getReactionEmoji(message);
+      card.classList.remove("whip-out", "whip-in");
+      transition.classList.remove("active");
+      void transition.offsetWidth;
+      transition.classList.add("active");
+
+      setTimeout(() => {
+        callback();
+      }, swapQuestionAt);
+
+      setTimeout(() => {
+        transition.classList.remove("active");
+      }, totalDuration);
+    }
+
+    function sanitize(input) {
+      return input.trim().replace(/\s+/g, " ");
+    }
+
+    function renderQuestion() {
+      if (state.index >= questionnaire.length) {
+        renderThankYou();
+        return;
+      }
+
+      updateProgress();
+      const q = questionnaire[state.index];
+      questionText.textContent = q.question;
+      inputs.innerHTML = "";
+
+      if (q.type === "choice") {
+        const list = document.createElement("div");
+        list.className = "options";
+
+        q.options.forEach((option) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "option-btn";
+          btn.textContent = option.label;
+          btn.addEventListener("click", () => {
+            state.answers[q.id] = option.label;
+            const response = q.responses[option.value] || "Choice accepted.";
+            showTransition(response, () => {
+              state.index += 1;
+              renderQuestion();
+            });
+          });
+          list.appendChild(btn);
+        });
+
+        inputs.appendChild(list);
+        const helper = document.createElement("p");
+        helper.className = "helper";
+        helper.textContent = "Tap an answer to continue.";
+        inputs.appendChild(helper);
+        return;
+      }
+
+      if (q.type === "text") {
+        const textarea = document.createElement("textarea");
+        textarea.placeholder = q.placeholder || "Type your answer...";
+        textarea.maxLength = 600;
+
+        const actionRow = document.createElement("div");
+        actionRow.className = "action-row";
+
+        const helper = document.createElement("p");
+        helper.className = "helper";
+        helper.textContent = "Write your answer, then continue.";
+
+        const next = document.createElement("button");
+        next.type = "button";
+        next.className = "next-btn";
+        next.textContent = "Continue";
+        next.disabled = true;
+
+        textarea.addEventListener("input", () => {
+          next.disabled = sanitize(textarea.value).length === 0;
+        });
+
+        next.addEventListener("click", () => {
+          const value = sanitize(textarea.value);
+          if (!value) return;
+          state.answers[q.id] = value;
+          const response = typeof q.response === "function" ? q.response(value) : "Noted.";
+          showTransition(response, () => {
+            state.index += 1;
+            renderQuestion();
+          });
+        });
+
+        actionRow.append(helper, next);
+        inputs.append(textarea, actionRow);
+        return;
+      }
+
+      if (q.type === "rank") {
+        const rankedItems = [...q.items];
+        let draggedIndex = null;
+
+        const list = document.createElement("div");
+        list.className = "rank-list";
+
+        const helper = document.createElement("p");
+        helper.className = "helper";
+        helper.textContent = "Drag cards to set your ranking, then continue.";
+
+        const actionRow = document.createElement("div");
+        actionRow.className = "action-row";
+
+        const dragHint = document.createElement("span");
+        dragHint.className = "drag-hint";
+        dragHint.textContent = "Drag + drop to reorder";
+
+        const next = document.createElement("button");
+        next.type = "button";
+        next.className = "next-btn";
+        next.textContent = "Continue";
+
+        function renderRankCards() {
+          list.innerHTML = "";
+          rankedItems.forEach((item, index) => {
+            const card = document.createElement("div");
+            card.className = "rank-card";
+            card.draggable = true;
+            card.dataset.index = String(index);
+
+            const rankBadge = document.createElement("span");
+            rankBadge.className = "rank-number";
+            rankBadge.textContent = String(index + 1);
+
+            const label = document.createElement("span");
+            label.className = "rank-label";
+            label.textContent = item;
+
+            card.append(rankBadge, label);
+
+            card.addEventListener("dragstart", () => {
+              draggedIndex = Number(card.dataset.index);
+              card.classList.add("dragging");
+            });
+
+            card.addEventListener("dragend", () => {
+              card.classList.remove("dragging");
+              draggedIndex = null;
+            });
+
+            card.addEventListener("dragover", (event) => {
+              event.preventDefault();
+            });
+
+            card.addEventListener("drop", (event) => {
+              event.preventDefault();
+              const dropIndex = Number(card.dataset.index);
+              if (draggedIndex === null || dropIndex === draggedIndex) return;
+              const [moved] = rankedItems.splice(draggedIndex, 1);
+              rankedItems.splice(dropIndex, 0, moved);
+              renderRankCards();
+            });
+
+            list.appendChild(card);
+          });
+        }
+
+        next.addEventListener("click", () => {
+          state.answers[q.id] = rankedItems.join(" > ");
+          const response = typeof q.response === "function" ? q.response(rankedItems) : "Ranking saved.";
+          showTransition(response, () => {
+            state.index += 1;
+            renderQuestion();
+          });
+        });
+
+        renderRankCards();
+        actionRow.append(dragHint, next);
+        inputs.append(list, helper, actionRow);
+      }
+    }
+
+    function renderThankYou() {
+      progressFill.style.width = "100%";
+      progressText.textContent = "Complete";
+      progressPercent.textContent = "100%";
+
+      const finalQuips = [
+        "Your responses have been reviewed by our highly selective committee of food snobs.",
+        "You've successfully completed the form and unlocked premium hosting energy.",
+        "You brought flavor, clarity, and just enough chaos. Ideal."
+      ];
+      const finalLine = finalQuips[Math.floor(Math.random() * finalQuips.length)];
+
+      questionText.textContent = "Thank you.";
+      inputs.innerHTML = `
+        <div class="thank-you">
+          <h2>You are officially on the list.</h2>
+          <p>${finalLine}</p>
+          <p>We'll use your answers to craft a night of elite eats, strong pours, and suspiciously good conversation.</p>
+          <span class="pill">Form submitted. Standards maintained.</span>
+        </div>
+      `;
+    }
+
+    renderQuestion();
+  </script>
+</body>
+</html>
