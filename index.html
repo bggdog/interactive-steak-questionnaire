@@ -516,6 +516,7 @@
     </section>
   </main>
 
+  <script src="/config.js"></script>
   <script>
     const questionnaire = [
       {
@@ -649,6 +650,20 @@
     const transition = document.getElementById("transition");
     const transitionEmoji = document.getElementById("transitionEmoji");
     const transitionBubble = document.getElementById("transitionBubble");
+
+    async function persistSubmission(answers) {
+      const url = window.SUPABASE_CONFIG?.url;
+      const key = window.SUPABASE_CONFIG?.anonKey;
+      if (!url || !key) return;
+      try {
+        const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+        const client = createClient(url, key);
+        const { error } = await client.from("questionnaire_submissions").insert({ answers });
+        if (error) console.error("Could not save submission:", error.message);
+      } catch (err) {
+        console.error("Could not save submission:", err);
+      }
+    }
 
     function updateProgress() {
       const completed = state.index;
@@ -877,6 +892,7 @@
           <span class="pill">Form submitted. Standards maintained.</span>
         </div>
       `;
+      void persistSubmission({ ...state.answers });
     }
 
     renderQuestion();

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responses · An Evening Well Spent</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --card: rgba(12, 12, 12, 0.92);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #f4f2ed;
+      --muted: #a8a0a0;
+      --accent: #c45c5c;
+      --good: #70ffa9;
+      --err: #ff8a8a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 16px 48px;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0 0 22px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: rgba(196, 92, 92, 0.55);
+    }
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    button {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 10px 18px;
+      border: 1px solid rgba(196, 92, 92, 0.45);
+      background: linear-gradient(120deg, #8f3535, #c45c5c);
+      color: #fff;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border);
+      color: var(--text);
+      font-weight: 500;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .banner {
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .banner.show { display: block; }
+    .banner.err {
+      background: rgba(120, 40, 40, 0.35);
+      border: 1px solid rgba(255, 138, 138, 0.35);
+      color: var(--err);
+    }
+    .banner.ok {
+      background: rgba(40, 90, 55, 0.28);
+      border: 1px solid rgba(112, 255, 169, 0.25);
+      color: var(--good);
+    }
+    .submission {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .submission-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .submission pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: #e8e4e4;
+    }
+    .empty {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    #listSection { display: none; }
+    #listSection.visible { display: block; }
+    #loginSection.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Questionnaire responses</h1>
+    <p class="sub">Staff only. Sign in with the account you created in Supabase Auth.</p>
+
+    <div id="banner" class="banner err" role="status"></div>
+
+    <div id="loginSection" class="card">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+
+      <div class="row-actions">
+        <button type="button" id="signInBtn">Sign in</button>
+      </div>
+    </div>
+
+    <div id="listSection">
+      <div class="card">
+        <div class="row-actions" style="margin-bottom: 0;">
+          <button type="button" id="refreshBtn" class="secondary">Refresh</button>
+          <button type="button" id="signOutBtn" class="secondary">Sign out</button>
+        </div>
+      </div>
+      <div id="submissions"></div>
+    </div>
+  </div>
+
+  <script src="/config.js"></script>
+  <script type="module">
+    const banner = document.getElementById("banner");
+    const loginSection = document.getElementById("loginSection");
+    const listSection = document.getElementById("listSection");
+    const submissionsEl = document.getElementById("submissions");
+
+    function showBanner(kind, text) {
+      banner.className = "banner show " + (kind === "ok" ? "ok" : "err");
+      banner.textContent = text;
+    }
+
+    function hideBanner() {
+      banner.className = "banner";
+      banner.textContent = "";
+    }
+
+    const cfg = window.SUPABASE_CONFIG;
+    if (!cfg?.url || !cfg?.anonKey) {
+      showBanner("err", "Add your Supabase url and anonKey in config.js, then redeploy.");
+      document.getElementById("signInBtn").disabled = true;
+    }
+
+    const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+    const supabase = cfg?.url && cfg?.anonKey
+      ? createClient(cfg.url, cfg.anonKey, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        })
+      : null;
+
+    if (supabase) {
+    async function loadSubmissions() {
+      hideBanner();
+      submissionsEl.innerHTML = "<p class=\"empty\">Loading…</p>";
+      const { data, error } = await supabase
+        .from("questionnaire_submissions")
+        .select("id, created_at, answers")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        submissionsEl.innerHTML = "";
+        showBanner("err", error.message);
+        return;
+      }
+
+      if (!data?.length) {
+        submissionsEl.innerHTML = "<p class=\"empty\">No submissions yet.</p>";
+        return;
+      }
+
+      submissionsEl.innerHTML = "";
+      for (const row of data) {
+        const div = document.createElement("div");
+        div.className = "submission";
+        const when = new Date(row.created_at).toLocaleString();
+        div.innerHTML =
+          "<div class=\"submission-meta\">" +
+          escapeHtml(when) +
+          " · <code style=\"font-size:0.75rem;\">" +
+          escapeHtml(row.id) +
+          "</code></div><pre>" +
+          escapeHtml(JSON.stringify(row.answers, null, 2)) +
+          "</pre>";
+        submissionsEl.appendChild(div);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showListUI() {
+      loginSection.classList.add("hidden");
+      listSection.classList.add("visible");
+    }
+
+    function showLoginUI() {
+      loginSection.classList.remove("hidden");
+      listSection.classList.remove("visible");
+      submissionsEl.innerHTML = "";
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      showListUI();
+      await loadSubmissions();
+    }
+
+    supabase.auth.onAuthStateChange((_event, sess) => {
+      if (sess) {
+        showListUI();
+        void loadSubmissions();
+      } else {
+        showLoginUI();
+      }
+    });
+
+    document.getElementById("signInBtn").addEventListener("click", async () => {
+      hideBanner();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      if (!email || !password) {
+        showBanner("err", "Enter email and password.");
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        showBanner("err", error.message);
+        return;
+      }
+      showBanner("ok", "Signed in.");
+      showListUI();
+      await loadSubmissions();
+    });
+
+    document.getElementById("signOutBtn").addEventListener("click", async () => {
+      hideBanner();
+      await supabase.auth.signOut();
+      showLoginUI();
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+      void loadSubmissions();
+    });
+    }
+  </script>
+</body>
+</html>
