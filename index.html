@@ -80,6 +80,22 @@
       position: relative;
     }
 
+    .portal-link {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 10;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(196, 92, 92, 0.48);
+      background: rgba(10, 10, 10, 0.72);
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(6px);
+    }
+
     .hero-title {
       margin: 0 0 16px;
       text-align: center;
@@ -523,6 +539,7 @@
   <audio id="bgMusic" class="bg-audio" autoplay loop preload="auto" playsinline>
     <source src="/background-music.mp3" type="audio/mpeg" />
   </audio>
+  <a class="portal-link" href="/portal.html">Portal</a>
   <main class="app">
     <h1 class="hero-title">An Evening Well Spent</h1>
     <section class="card" id="card">
@@ -760,26 +777,37 @@
 
       const p1 = document.createElement("p");
       p1.className = "intro-copy";
-      p1.textContent =
-        "This is a quick preferences pass for the evening—steak, sushi, drinks, and a few personality checkpoints—so the experience can feel intentional before you walk in.";
+      p1.textContent = "Enter your name to start the questionnaire.";
 
-      const p2 = document.createElement("p");
-      p2.className = "intro-copy";
-      p2.textContent =
-        "It only takes a couple of minutes. Full-screen transitions will appear between questions; answer honestly and we will pretend to judge you with affection.";
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = "Your name";
+      nameInput.autocomplete = "name";
+      nameInput.maxLength = 80;
+      nameInput.style.marginBottom = "12px";
 
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "next-btn intro-start";
       btn.textContent = "Get started";
+      btn.disabled = true;
+
+      nameInput.addEventListener("input", () => {
+        btn.disabled = sanitize(nameInput.value).length === 0;
+      });
+
       btn.addEventListener("click", () => {
+        const guestName = sanitize(nameInput.value);
+        if (!guestName) return;
+        state.answers.guest_name = guestName;
         state.onIntro = false;
         card.classList.remove("card--intro");
         renderQuestion();
       });
 
-      wrap.append(p1, p2, btn);
+      wrap.append(p1, nameInput, btn);
       inputs.appendChild(wrap);
+      nameInput.focus();
     }
 
     function renderQuestion() {

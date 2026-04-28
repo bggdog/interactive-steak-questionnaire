@@ -11,7 +11,6 @@
       --border: rgba(255, 255, 255, 0.12);
       --text: #f4f2ed;
       --muted: #a8a0a0;
-      --accent: #c45c5c;
       --good: #70ffa9;
       --err: #ff8a8a;
     }
@@ -25,7 +24,7 @@
       padding: 24px 16px 48px;
     }
     .wrap {
-      max-width: 960px;
+      max-width: 1000px;
       margin: 0 auto;
     }
     h1 {
@@ -44,6 +43,26 @@
       border-radius: 16px;
       padding: 22px;
       margin-bottom: 18px;
+    }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 600;
     }
     label {
       display: block;
@@ -110,39 +129,73 @@
       border: 1px solid rgba(112, 255, 169, 0.25);
       color: var(--good);
     }
+    .empty {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .tally-block {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .tally-title {
+      font-size: 0.95rem;
+      margin: 0 0 10px;
+      color: #f1ecec;
+    }
+    .tally-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 4px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.88rem;
+    }
+    .tally-row:first-of-type { border-top: 0; }
+    .tally-key {
+      color: #e6dfdf;
+      word-break: break-word;
+    }
+    .tally-count {
+      color: #fff;
+      font-weight: 600;
+      white-space: nowrap;
+    }
     .submission {
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      background: rgba(0, 0, 0, 0.25);
+      padding: 12px;
+      margin-bottom: 10px;
+      background: rgba(0, 0, 0, 0.22);
     }
     .submission-meta {
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 6px;
+    }
+    .submission-name {
+      font-size: 1rem;
+      margin-bottom: 8px;
     }
     .submission pre {
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       line-height: 1.45;
       color: #e8e4e4;
     }
-    .empty {
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-    #listSection { display: none; }
-    #listSection.visible { display: block; }
+    #dashboardSection { display: none; }
+    #dashboardSection.visible { display: block; }
     #loginSection.hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Questionnaire responses</h1>
-    <p class="sub">Staff only. Sign in with the account you created in Supabase Auth.</p>
+    <p class="sub">Staff only. Sign in with your Supabase Auth user.</p>
 
     <div id="banner" class="banner err" role="status"></div>
 
@@ -158,22 +211,47 @@
       </div>
     </div>
 
-    <div id="listSection">
+    <div id="dashboardSection">
       <div class="card">
-        <div class="row-actions" style="margin-bottom: 0;">
+        <div class="row-actions" style="margin-bottom: 12px;">
           <button type="button" id="refreshBtn" class="secondary">Refresh</button>
           <button type="button" id="signOutBtn" class="secondary">Sign out</button>
         </div>
+        <div class="grid" id="statsGrid"></div>
       </div>
-      <div id="submissions"></div>
+
+      <div class="card">
+        <h2 class="tally-title">Tallies by question</h2>
+        <div id="tallies"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="tally-title">Recent submissions</h2>
+        <div id="submissions"></div>
+      </div>
     </div>
   </div>
 
   <script src="/config.js"></script>
   <script type="module">
+    const QUESTION_LABELS = {
+      guest_name: "Name",
+      steak: "How do you like your steak?",
+      sushi_preferences: "Any sushi items preferred/excluded?",
+      spice_level: "Spice level for the evening",
+      cocktail_style: "Cocktail preference",
+      favorite_bourbon: "Favorite bourbon or whiskey",
+      cigar_experience: "Experience with cigars",
+      favorite_cigars: "Favorite cigars",
+      conversation_vibe: "Conversational vibe",
+      anything_else: "Anything else"
+    };
+
     const banner = document.getElementById("banner");
     const loginSection = document.getElementById("loginSection");
-    const listSection = document.getElementById("listSection");
+    const dashboardSection = document.getElementById("dashboardSection");
+    const statsGrid = document.getElementById("statsGrid");
+    const talliesEl = document.getElementById("tallies");
     const submissionsEl = document.getElementById("submissions");
 
     function showBanner(kind, text) {
@@ -184,6 +262,125 @@
     function hideBanner() {
       banner.className = "banner";
       banner.textContent = "";
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showDashboardUI() {
+      loginSection.classList.add("hidden");
+      dashboardSection.classList.add("visible");
+    }
+
+    function showLoginUI() {
+      loginSection.classList.remove("hidden");
+      dashboardSection.classList.remove("visible");
+      statsGrid.innerHTML = "";
+      talliesEl.innerHTML = "";
+      submissionsEl.innerHTML = "";
+    }
+
+    function normalizeAnswer(value) {
+      if (value === null || value === undefined) return "(blank)";
+      const text = typeof value === "string" ? value.trim() : String(value);
+      return text || "(blank)";
+    }
+
+    function renderStats(rows) {
+      const total = rows.length;
+      const named = rows.filter((r) => normalizeAnswer(r.answers?.guest_name) !== "(blank)").length;
+      const latest = rows[0]?.created_at ? new Date(rows[0].created_at).toLocaleString() : "n/a";
+
+      statsGrid.innerHTML = "";
+      const stats = [
+        ["Total submissions", String(total)],
+        ["Submissions with name", String(named)],
+        ["Most recent submission", latest]
+      ];
+
+      for (const [label, value] of stats) {
+        const item = document.createElement("div");
+        item.className = "stat";
+        item.innerHTML =
+          "<div class=\"stat-label\">" + escapeHtml(label) + "</div>" +
+          "<div class=\"stat-value\">" + escapeHtml(value) + "</div>";
+        statsGrid.appendChild(item);
+      }
+    }
+
+    function buildTallies(rows) {
+      const tallyMap = new Map();
+
+      for (const row of rows) {
+        const answers = row.answers || {};
+        for (const [questionId, rawValue] of Object.entries(answers)) {
+          if (!tallyMap.has(questionId)) tallyMap.set(questionId, new Map());
+          const value = normalizeAnswer(rawValue);
+          const counts = tallyMap.get(questionId);
+          counts.set(value, (counts.get(value) || 0) + 1);
+        }
+      }
+
+      return tallyMap;
+    }
+
+    function renderTallies(rows) {
+      const tallyMap = buildTallies(rows);
+      talliesEl.innerHTML = "";
+
+      if (!rows.length) {
+        talliesEl.innerHTML = "<p class=\"empty\">No submissions yet.</p>";
+        return;
+      }
+
+      for (const [questionId, counts] of tallyMap.entries()) {
+        const block = document.createElement("div");
+        block.className = "tally-block";
+
+        const title = document.createElement("h3");
+        title.className = "tally-title";
+        title.textContent = QUESTION_LABELS[questionId] || questionId;
+        block.appendChild(title);
+
+        const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+        for (const [value, count] of sorted) {
+          const row = document.createElement("div");
+          row.className = "tally-row";
+          row.innerHTML =
+            "<span class=\"tally-key\">" + escapeHtml(value) + "</span>" +
+            "<span class=\"tally-count\">" + count + "</span>";
+          block.appendChild(row);
+        }
+
+        talliesEl.appendChild(block);
+      }
+    }
+
+    function renderRecent(rows) {
+      submissionsEl.innerHTML = "";
+
+      if (!rows.length) {
+        submissionsEl.innerHTML = "<p class=\"empty\">No submissions yet.</p>";
+        return;
+      }
+
+      const recent = rows.slice(0, 10);
+      for (const row of recent) {
+        const name = normalizeAnswer(row.answers?.guest_name);
+        const when = new Date(row.created_at).toLocaleString();
+        const item = document.createElement("div");
+        item.className = "submission";
+        item.innerHTML =
+          "<div class=\"submission-name\">" + escapeHtml(name) + "</div>" +
+          "<div class=\"submission-meta\">" + escapeHtml(when) + "</div>" +
+          "<pre>" + escapeHtml(JSON.stringify(row.answers || {}, null, 2)) + "</pre>";
+        submissionsEl.appendChild(item);
+      }
     }
 
     const cfg = window.SUPABASE_CONFIG;
@@ -200,103 +397,69 @@
       : null;
 
     if (supabase) {
-    async function loadSubmissions() {
-      hideBanner();
-      submissionsEl.innerHTML = "<p class=\"empty\">Loading…</p>";
-      const { data, error } = await supabase
-        .from("questionnaire_submissions")
-        .select("id, created_at, answers")
-        .order("created_at", { ascending: false });
-
-      if (error) {
+      async function loadDashboard() {
+        hideBanner();
+        talliesEl.innerHTML = "<p class=\"empty\">Loading…</p>";
         submissionsEl.innerHTML = "";
-        showBanner("err", error.message);
-        return;
+        const { data, error } = await supabase
+          .from("questionnaire_submissions")
+          .select("id, created_at, answers")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          talliesEl.innerHTML = "";
+          showBanner("err", error.message);
+          return;
+        }
+
+        const rows = data || [];
+        renderStats(rows);
+        renderTallies(rows);
+        renderRecent(rows);
       }
 
-      if (!data?.length) {
-        submissionsEl.innerHTML = "<p class=\"empty\">No submissions yet.</p>";
-        return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        showDashboardUI();
+        await loadDashboard();
       }
 
-      submissionsEl.innerHTML = "";
-      for (const row of data) {
-        const div = document.createElement("div");
-        div.className = "submission";
-        const when = new Date(row.created_at).toLocaleString();
-        div.innerHTML =
-          "<div class=\"submission-meta\">" +
-          escapeHtml(when) +
-          " · <code style=\"font-size:0.75rem;\">" +
-          escapeHtml(row.id) +
-          "</code></div><pre>" +
-          escapeHtml(JSON.stringify(row.answers, null, 2)) +
-          "</pre>";
-        submissionsEl.appendChild(div);
-      }
-    }
+      supabase.auth.onAuthStateChange((_event, sess) => {
+        if (sess) {
+          showDashboardUI();
+          void loadDashboard();
+        } else {
+          showLoginUI();
+        }
+      });
 
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
+      document.getElementById("signInBtn").addEventListener("click", async () => {
+        hideBanner();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        if (!email || !password) {
+          showBanner("err", "Enter email and password.");
+          return;
+        }
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          showBanner("err", error.message);
+          return;
+        }
+        showBanner("ok", "Signed in.");
+        showDashboardUI();
+        await loadDashboard();
+      });
 
-    function showListUI() {
-      loginSection.classList.add("hidden");
-      listSection.classList.add("visible");
-    }
-
-    function showLoginUI() {
-      loginSection.classList.remove("hidden");
-      listSection.classList.remove("visible");
-      submissionsEl.innerHTML = "";
-    }
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      showListUI();
-      await loadSubmissions();
-    }
-
-    supabase.auth.onAuthStateChange((_event, sess) => {
-      if (sess) {
-        showListUI();
-        void loadSubmissions();
-      } else {
+      document.getElementById("signOutBtn").addEventListener("click", async () => {
+        hideBanner();
+        await supabase.auth.signOut();
         showLoginUI();
-      }
-    });
+      });
 
-    document.getElementById("signInBtn").addEventListener("click", async () => {
-      hideBanner();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      if (!email || !password) {
-        showBanner("err", "Enter email and password.");
-        return;
-      }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        showBanner("err", error.message);
-        return;
-      }
-      showBanner("ok", "Signed in.");
-      showListUI();
-      await loadSubmissions();
-    });
-
-    document.getElementById("signOutBtn").addEventListener("click", async () => {
-      hideBanner();
-      await supabase.auth.signOut();
-      showLoginUI();
-    });
-
-    document.getElementById("refreshBtn").addEventListener("click", () => {
-      void loadSubmissions();
-    });
+      document.getElementById("refreshBtn").addEventListener("click", () => {
+        void loadDashboard();
+      });
     }
   </script>
 </body>
