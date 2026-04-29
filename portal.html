@@ -11,7 +11,6 @@
       --border: rgba(255, 255, 255, 0.12);
       --text: #f4f2ed;
       --muted: #a8a0a0;
-      --good: #70ffa9;
       --err: #ff8a8a;
     }
     * { box-sizing: border-box; }
@@ -64,26 +63,6 @@
       font-size: 1.2rem;
       font-weight: 600;
     }
-    label {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    input {
-      width: 100%;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(0, 0, 0, 0.35);
-      color: var(--text);
-      font-size: 0.95rem;
-      margin-bottom: 14px;
-    }
-    input:focus {
-      outline: none;
-      border-color: rgba(196, 92, 92, 0.55);
-    }
     .row-actions {
       display: flex;
       flex-wrap: wrap;
@@ -107,10 +86,6 @@
       color: var(--text);
       font-weight: 500;
     }
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
     .banner {
       padding: 12px 14px;
       border-radius: 10px;
@@ -123,11 +98,6 @@
       background: rgba(120, 40, 40, 0.35);
       border: 1px solid rgba(255, 138, 138, 0.35);
       color: var(--err);
-    }
-    .banner.ok {
-      background: rgba(40, 90, 55, 0.28);
-      border: 1px solid rgba(112, 255, 169, 0.25);
-      color: var(--good);
     }
     .empty {
       color: var(--muted);
@@ -187,48 +157,30 @@
       line-height: 1.45;
       color: #e8e4e4;
     }
-    #dashboardSection { display: none; }
-    #dashboardSection.visible { display: block; }
-    #loginSection.hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Questionnaire responses</h1>
-    <p class="sub">Staff only. Sign in with your Supabase Auth user.</p>
+    <p class="sub">Public portal view with tally summaries and recent submissions.</p>
 
     <div id="banner" class="banner err" role="status"></div>
 
-    <div id="loginSection" class="card">
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="username" />
-
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" />
-
-      <div class="row-actions">
-        <button type="button" id="signInBtn">Sign in</button>
+    <div class="card">
+      <div class="row-actions" style="margin-bottom: 12px;">
+        <button type="button" id="refreshBtn" class="secondary">Refresh</button>
       </div>
+      <div class="grid" id="statsGrid"></div>
     </div>
 
-    <div id="dashboardSection">
-      <div class="card">
-        <div class="row-actions" style="margin-bottom: 12px;">
-          <button type="button" id="refreshBtn" class="secondary">Refresh</button>
-          <button type="button" id="signOutBtn" class="secondary">Sign out</button>
-        </div>
-        <div class="grid" id="statsGrid"></div>
-      </div>
+    <div class="card">
+      <h2 class="tally-title">Tallies by question</h2>
+      <div id="tallies"></div>
+    </div>
 
-      <div class="card">
-        <h2 class="tally-title">Tallies by question</h2>
-        <div id="tallies"></div>
-      </div>
-
-      <div class="card">
-        <h2 class="tally-title">Recent submissions</h2>
-        <div id="submissions"></div>
-      </div>
+    <div class="card">
+      <h2 class="tally-title">Recent submissions</h2>
+      <div id="submissions"></div>
     </div>
   </div>
 
@@ -248,14 +200,12 @@
     };
 
     const banner = document.getElementById("banner");
-    const loginSection = document.getElementById("loginSection");
-    const dashboardSection = document.getElementById("dashboardSection");
     const statsGrid = document.getElementById("statsGrid");
     const talliesEl = document.getElementById("tallies");
     const submissionsEl = document.getElementById("submissions");
 
-    function showBanner(kind, text) {
-      banner.className = "banner show " + (kind === "ok" ? "ok" : "err");
+    function showBanner(text) {
+      banner.className = "banner show err";
       banner.textContent = text;
     }
 
@@ -270,19 +220,6 @@
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
-    }
-
-    function showDashboardUI() {
-      loginSection.classList.add("hidden");
-      dashboardSection.classList.add("visible");
-    }
-
-    function showLoginUI() {
-      loginSection.classList.remove("hidden");
-      dashboardSection.classList.remove("visible");
-      statsGrid.innerHTML = "";
-      talliesEl.innerHTML = "";
-      submissionsEl.innerHTML = "";
     }
 
     function normalizeAnswer(value) {
@@ -315,7 +252,6 @@
 
     function buildTallies(rows) {
       const tallyMap = new Map();
-
       for (const row of rows) {
         const answers = row.answers || {};
         for (const [questionId, rawValue] of Object.entries(answers)) {
@@ -325,7 +261,6 @@
           counts.set(value, (counts.get(value) || 0) + 1);
         }
       }
-
       return tallyMap;
     }
 
@@ -341,7 +276,6 @@
       for (const [questionId, counts] of tallyMap.entries()) {
         const block = document.createElement("div");
         block.className = "tally-block";
-
         const title = document.createElement("h3");
         title.className = "tally-title";
         title.textContent = QUESTION_LABELS[questionId] || questionId;
@@ -356,19 +290,16 @@
             "<span class=\"tally-count\">" + count + "</span>";
           block.appendChild(row);
         }
-
         talliesEl.appendChild(block);
       }
     }
 
     function renderRecent(rows) {
       submissionsEl.innerHTML = "";
-
       if (!rows.length) {
         submissionsEl.innerHTML = "<p class=\"empty\">No submissions yet.</p>";
         return;
       }
-
       const recent = rows.slice(0, 10);
       for (const row of recent) {
         const name = normalizeAnswer(row.answers?.guest_name);
@@ -385,18 +316,11 @@
 
     const cfg = window.SUPABASE_CONFIG;
     if (!cfg?.url || !cfg?.anonKey) {
-      showBanner("err", "Add your Supabase url and anonKey in config.js, then redeploy.");
-      document.getElementById("signInBtn").disabled = true;
-    }
+      showBanner("Add your Supabase url and anonKey in config.js, then redeploy.");
+    } else {
+      const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+      const supabase = createClient(cfg.url, cfg.anonKey);
 
-    const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
-    const supabase = cfg?.url && cfg?.anonKey
-      ? createClient(cfg.url, cfg.anonKey, {
-          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-        })
-      : null;
-
-    if (supabase) {
       async function loadDashboard() {
         hideBanner();
         talliesEl.innerHTML = "<p class=\"empty\">Loading…</p>";
@@ -408,7 +332,7 @@
 
         if (error) {
           talliesEl.innerHTML = "";
-          showBanner("err", error.message);
+          showBanner(error.message);
           return;
         }
 
@@ -418,48 +342,11 @@
         renderRecent(rows);
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        showDashboardUI();
-        await loadDashboard();
-      }
-
-      supabase.auth.onAuthStateChange((_event, sess) => {
-        if (sess) {
-          showDashboardUI();
-          void loadDashboard();
-        } else {
-          showLoginUI();
-        }
-      });
-
-      document.getElementById("signInBtn").addEventListener("click", async () => {
-        hideBanner();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        if (!email || !password) {
-          showBanner("err", "Enter email and password.");
-          return;
-        }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          showBanner("err", error.message);
-          return;
-        }
-        showBanner("ok", "Signed in.");
-        showDashboardUI();
-        await loadDashboard();
-      });
-
-      document.getElementById("signOutBtn").addEventListener("click", async () => {
-        hideBanner();
-        await supabase.auth.signOut();
-        showLoginUI();
-      });
-
       document.getElementById("refreshBtn").addEventListener("click", () => {
         void loadDashboard();
       });
+
+      await loadDashboard();
     }
   </script>
 </body>
